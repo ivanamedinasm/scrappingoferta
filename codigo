@@ -30,7 +30,7 @@ results = pd.DataFrame({'nombre proyecto':[],'comuna':[], 'direccion':[],'entreg
 driver = webdriver.Firefox(executable_path="geckodriver.exe")
 #driver = webdriver.Chrome(executable_path="chromedriver.exe")
 
-URL = "https://www.portalinmobiliario.com/venta/departamento/proyectos/metropolitana/_Desde_701_OrderId_BEGINS"
+URL = "https://"
 
 driver.get(URL)
 
@@ -111,4 +111,4 @@ while True:
         break
     print("Nueva pagina")
 print("Fin")
-results.to_csv("deptos2907-6.csv",sep=";",index=False,encoding=("utf-8-sig"))
+results.to_csv("archivo.csv",sep=";",index=False,encoding=("utf-8-sig"))
