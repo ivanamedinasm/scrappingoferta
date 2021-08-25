@@ -1,0 +1,114 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Fri May 14 19:12:21 2021
+
+@author: ivana
+"""
+
+# -*- coding: utf-8 -*-
+"""
+Spyder Editor
+
+This is a temporary script file.
+"""
+import selenium
+import pandas as pd
+import time
+from selenium import webdriver
+from bs4 import BeautifulSoup
+import os
+
+#crear data frame con las variables
+
+results = pd.DataFrame({'nombre proyecto':[],'comuna':[], 'direccion':[],'entrega':[],
+                        'precio_desde_uf':[], 'dor_min':[], 'dor_max':[], 'baño_min':[],
+                        'baño_max':[], 'tamaño_min':[], 'tamaño_max':[], 'inmobiliaria':[], 
+                        'atributo':[], 'publicacion':[], "url":[], "imagen":[],
+                        'latitud': [] , 'longitud':[]})
+
+
+driver = webdriver.Firefox(executable_path="geckodriver.exe")
+#driver = webdriver.Chrome(executable_path="chromedriver.exe")
+
+URL = "https://www.portalinmobiliario.com/venta/departamento/proyectos/metropolitana/_Desde_701_OrderId_BEGINS"
+
+driver.get(URL)
+
+try: 
+    elem = driver.find_element_by_id("cookieDisclaimerButton").click()
+    time.sleep(ts)
+except: 
+    pass
+
+print(driver.current_url)
+url_actual = driver.current_url
+list_depto = driver.find_elements_by_class_name("ui-search-result-image__element")
+URL_pagina = driver.current_url
+
+while True: 
+    time.sleep(1)
+    for i,proyecto in enumerate(list_depto):
+        while True:
+           # try:
+                driver.get(URL_pagina)
+                list_depto = driver.find_elements_by_class_name("ui-search-result-image__element")
+                list_depto[i].click()
+                time.sleep(2)
+                
+                table = driver.find_elements_by_class_name("vip-nav-bounds")
+                table_2=table[2].get_attribute('innerHTML')
+                soup = BeautifulSoup(table_2,"html.parser")
+#buscar en que sección de la pág está la info para cada variable                    
+                nombre = soup.find('h1',{'class':"item-title"}).string.strip()
+                comuna = soup.find('h3',{'class':"map-location"}).string
+                direccion = soup.find('h2',{'class':"map-address"}).string
+                entrega = soup.find('ul',{'class':"specs-list"}).find_all("li")[-1].find("span").string.split("-")[-1].strip()
+                precio_desde_uf = soup.find('span',{'class':"price-tag-fraction"}).string
+                dor_min = soup.find('ul',{'class':"specs-list"}).find_all("li")[1].find("span").string.split("-")[0].strip()
+                dor_max =  soup.find('ul',{'class':"specs-list"}).find_all("li")[1].find("span").string.split("-")[-1].strip()
+                baño_min = soup.find('ul',{'class':"specs-list"}).find_all("li")[2].find("span").string.split("-")[0].strip()
+                baño_max =  soup.find('ul',{'class':"specs-list"}).find_all("li")[2].find("span").string.split("-")[-1].strip()
+                tamaño_min = soup.find('ul',{'class':"specs-list"}).find_all("li")[0].find("span").string.split("-")[0].strip()
+                tamaño_max = soup.find('ul',{'class':"specs-list"}).find_all("li")[0].find("span").string.split("-")[-1].strip()
+                inmobiliaria = soup.find('p',{'class':"disclaimer"}).string.strip()
+                publicacion = soup.find_all('p',{'class':"info"})[-1].string.strip()
+                atributo = soup.find('div',{'class':"item-description__text"})
+                URL_pagina_depto = str(driver.current_url)
+                imagen = os.path.join("image",nombre+".png").replace(" ","_")
+                el= driver.find_element_by_tag_name('body') 
+                #el.screenshot(imagen)
+                
+                mapa = soup.find(attrs={"id":"sectionDynamicMap"}).find_all("img")[-1]["srcset"]
+                latitud , longitud = mapa.split("center=")[-1].split("&")[0].split("%2C")
+                
+                prueba = pd.DataFrame({'nombre proyecto':[nombre],'comuna':[comuna], 'direccion':[direccion],'entrega':[entrega],
+                                    'precio_desde_uf':[precio_desde_uf], 'dor_min':[dor_min], 'dor_max':[dor_max], 'baño_min':[baño_min],
+                                    'baño_max':[baño_max], 'tamaño_min':[tamaño_min], 'tamaño_max':[tamaño_max], 'inmobiliaria':[inmobiliaria], 
+                                    'atributo':[atributo], 'publicacion':[publicacion], "url":[URL_pagina_depto], "imagen":[imagen], 
+                                    'latitud': [latitud] , 'longitud':[longitud]})
+                results=results.append(prueba)
+                print(i/len(list_depto))
+                break
+         #   except:
+            #    print("error")
+            
+    print("Termino pagina")
+    
+    driver.get(URL_pagina)
+    time.sleep(1)
+    try:
+        driver.find_element_by_class_name("andes-pagination__button--next").click()
+        URL_pagina = driver.current_url
+        time.sleep(0.5)
+        #driver.quit()
+        time.sleep(1)
+        #driver = webdriver.Chrome(executable_path="chromedriver.exe")
+        #driver.get(URL_pagina)
+        time.sleep(1)
+        list_depto = driver.find_elements_by_class_name("ui-search-result-image__element")
+
+    except:
+        break
+    print("Nueva pagina")
+print("Fin")
+results.to_csv("deptos2907-6.csv",sep=";",index=False,encoding=("utf-8-sig"))
